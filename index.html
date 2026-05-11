@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Texture Stylization User Study | 三维纹理风格化用户实验</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f4f4f7;
+    color: #222;
+    min-height: 100vh;
+  }
+
+  /* ── 顶部进度条 ── */
+  #topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  #topbar .label { font-size: 14px; color: #555; white-space: nowrap; }
+  #progress-wrap { flex: 1; background: #e8e8e8; border-radius: 99px; height: 8px; }
+  #progress-bar  { height: 8px; border-radius: 99px; background: #5c6bc0; transition: width .3s; }
+
+  /* ── 主容器 ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* ── 欢迎页 ── */
+  .welcome-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 48px 40px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    max-width: 680px;
+    margin: 60px auto;
+  }
+  .welcome-card h1 { font-size: 22px; margin-bottom: 8px; }
+  .welcome-card h2 { font-size: 16px; color: #555; font-weight: normal; margin-bottom: 28px; }
+  .welcome-card p  { line-height: 1.7; color: #444; margin-bottom: 12px; font-size: 15px; }
+  .id-label { display: block; font-weight: 600; margin: 24px 0 8px; }
+  .id-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .id-input:focus { border-color: #5c6bc0; }
+
+  /* ── Case 页 ── */
+  .case-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .case-sub {
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 24px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #5c6bc0;
+    margin-bottom: 14px;
+  }
+
+  /* ── 图片 ── */
+  .img-wrap {
+    text-align: center;
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 12px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .img-wrap img {
+    max-width: 100%;
+    max-height: 280px;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+  .img-loading {
+    color: #aaa;
+    font-size: 14px;
+  }
+
+  /* ── 方法块 ── */
+  .method-block {
+    border: 2px solid #eee;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color .2s;
+  }
+  .method-block:hover { border-color: #c5cae9; }
+  .method-label {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .method-label span {
+    background: #5c6bc0;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+
+  .method-img-wrap {
+    text-align: center;
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 18px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .method-img-wrap img {
+    max-width: 100%;
+    max-height: 240px;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+
+  /* ── 量表 ── */
+  .scale-row {
+    margin-bottom: 14px;
+  }
+  .scale-question {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  .scale-question em { color: #777; font-style: normal; font-weight: 400; }
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+    padding: 0 2px;
+  }
+  .scale-options {
+    display: flex;
+    gap: 8px;
+  }
+  .scale-options label {
+    flex: 1;
+    text-align: center;
+  }
+  .scale-options input[type=radio] { display: none; }
+  .scale-options .dot {
+    display: block;
+    width: 100%;
+    padding: 8px 0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #777;
+    cursor: pointer;
+    transition: all .15s;
+    background: #fff;
+  }
+  .scale-options input[type=radio]:checked + .dot {
+    background: #5c6bc0;
+    border-color: #5c6bc0;
+    color: #fff;
+  }
+  .scale-options .dot:hover { border-color: #9fa8da; }
+
+  /* ── Q3 ── */
+  .q3-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .q3-options label { cursor: pointer; }
+  .q3-options input[type=radio] { display: none; }
+  .q3-btn {
+    display: block;
+    padding: 14px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #555;
+    transition: all .15s;
+    background: #fff;
+  }
+  .q3-btn:hover { border-color: #9fa8da; }
+  .q3-options input[type=radio]:checked + .q3-btn {
+    background: #5c6bc0;
+    border-color: #5c6bc0;
+    color: #fff;
+  }
+
+  /* ── 底部导航 ── */
+  .nav-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+  }
+  .btn {
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background .2s, opacity .2s;
+  }
+  .btn-primary { background: #5c6bc0; color: #fff; }
+  .btn-primary:hover { background: #3f51b5; }
+  .btn-secondary { background: #eee; color: #555; }
+  .btn-secondary:hover { background: #ddd; }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  /* ── 完成页 ── */
+  .done-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 48px 40px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    max-width: 560px;
+    margin: 60px auto;
+  }
+  .done-card h1 { font-size: 28px; margin-bottom: 12px; }
+  .done-card p  { color: #555; line-height: 1.7; margin-bottom: 24px; }
+  .btn-download { background: #43a047; color: #fff; font-size: 16px; padding: 14px 36px; }
+  .btn-download:hover { background: #388e3c; }
+
+  /* ── 验证提示 ── */
+  .error-msg {
+    color: #e53935;
+    font-size: 13px;
+    margin-top: 8px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶部进度条（case 页显示）-->
+<div id="topbar" style="display:none">
+  <span class="label" id="progress-label">Case 1 / 24</span>
+  <div id="progress-wrap"><div id="progress-bar" style="width:0%"></div></div>
+</div>
+
+<!-- ══ 欢迎页 ══ -->
+<div class="page active" id="page-welcome">
+  <div class="welcome-card">
+    <h1>3D Texture Stylization User Study</h1>
+    <h2>三维纹理风格化用户实验</h2>
+    <p>
+      Thank you for participating! You will evaluate <strong>24</strong> stylized 3D texture results.<br>
+      感谢参与！您将评估 <strong>24</strong> 组风格化三维纹理结果。
+    </p>
+    <p>
+      For each case you will see a style reference and 4 anonymous results (A/B/C/D).<br>
+      每组展示一张风格参考图和 4 个匿名方法结果（A/B/C/D）。
+    </p>
+    <p>
+      <strong>Estimated time: 20–30 minutes. | 预计用时：20–30 分钟。</strong>
+    </p>
+    <label class="id-label" for="pid">
+      Participant ID | 参与者编号 <span style="color:#e53935">*</span>
+    </label>
+    <input class="id-input" id="pid" type="text" placeholder="e.g. P01" maxlength="20">
+    <p id="pid-error" class="error-msg">请输入参与者编号 / Please enter your ID.</p>
+    <br><br>
+    <button class="btn btn-primary" style="width:100%;padding:14px" onclick="startSurvey()">
+      Start / 开始 →
+    </button>
+  </div>
+</div>
+
+<!-- ══ Case 页（动态生成）══ -->
+<div class="page" id="page-case">
+  <div class="container" id="case-container"></div>
+  <div class="nav-bar">
+    <button class="btn btn-secondary" id="btn-prev" onclick="navigate(-1)">← Previous</button>
+    <span id="nav-label" style="font-size:14px;color:#888"></span>
+    <button class="btn btn-primary" id="btn-next" onclick="navigate(1)">Next →</button>
+  </div>
+</div>
+
+<!-- ══ 完成页 ══ -->
+<div class="page" id="page-done">
+  <div class="done-card">
+    <h1>🎉</h1>
+    <h1>All Done! | 完成！</h1>
+    <p>
+      Thank you for completing the study!<br>
+      感谢您完成本次用户实验！<br><br>
+      Please click the button below to download your responses as a CSV file,
+      then send the file to the researcher.<br>
+      请点击下方按钮下载您的回答（CSV 文件），然后发送给研究者。
+    </p>
+    <button class="btn btn-download" onclick="downloadCSV()">
+      ⬇ Download Responses / 下载回答
+    </button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+// ── 状态 ──
+var participantId = '';
+var currentCase   = 0;
+var responses     = {};   // { caseIdx: { A:{q1,q2}, B:{q1,q2}, C:{q1,q2}, D:{q1,q2}, q3 } }
+
+var LABELS = ['A','B','C','D'];
+
+// ── 恢复进度 ──
+(function(){
+  var saved = localStorage.getItem('survey_state');
+  if (saved) {
+    try {
+      var s = JSON.parse(saved);
+      participantId = s.participantId || '';
+      currentCase   = s.currentCase   || 0;
+      responses     = s.responses     || {};
+    } catch(e) {}
+  }
+})();
+
+// ── 开始 ──
+function startSurvey() {
+  var val = document.getElementById('pid').value.trim();
+  if (!val) {
+    document.getElementById('pid-error').style.display = 'block';
+    return;
+  }
+  participantId = val;
+  saveState();
+  showCase(currentCase);
+}
+
+// ── 显示 Case ──
+function showCase(idx) {
+  currentCase = idx;
+  var cfg = SURVEY_CONFIG.cases[idx];
+
+  // 切换页
+  document.getElementById('page-welcome').classList.remove('active');
+  document.getElementById('page-done').classList.remove('active');
+  document.getElementById('page-case').classList.add('active');
+  document.getElementById('topbar').style.display = 'flex';
+
+  // 进度
+  var pct = (idx / SURVEY_CONFIG.cases.length * 100).toFixed(1);
+  document.getElementById('progress-bar').style.width  = pct + '%';
+  document.getElementById('progress-label').textContent = 'Case ' + (idx+1) + ' / ' + SURVEY_CONFIG.cases.length;
+  document.getElementById('nav-label').textContent      = 'Case ' + (idx+1) + ' / ' + SURVEY_CONFIG.cases.length;
+
+  // 导航按钮
+  document.getElementById('btn-prev').disabled = (idx === 0);
+  document.getElementById('btn-next').textContent = (idx === SURVEY_CONFIG.cases.length - 1) ? 'Submit / 提交 ✓' : 'Next →';
+
+  // 渲染内容
+  var saved = responses[idx] || {};
+  var html  = '';
+
+  html += '<div class="case-title">Case ' + (idx+1) + ' / ' + SURVEY_CONFIG.cases.length + '</div>';
+  html += '<div class="case-sub">Please rate each method, then pick the most appealing one. | 请为每个方法打分，最后选出最具吸引力的结果。</div>';
+
+  // 参考图
+  html += '<div class="card">';
+  html += '<div class="card-title">Original Mesh &amp; Style Reference | 原始网格渲染 &amp; 风格参考图</div>';
+  html += '<div class="img-wrap">';
+  if (cfg.headerUrl) {
+    html += '<img src="' + cfg.headerUrl + '" alt="header" onload="this.previousSibling&&this.previousSibling.remove()" onerror="this.alt=\'Image failed to load\'">';
+  } else {
+    html += '<span class="img-loading">Image not available</span>';
+  }
+  html += '</div></div>';
+
+  // 每个方法
+  for (var r = 0; r < 4; r++) {
+    var lbl = LABELS[r];
+    var mSaved = saved[lbl] || {};
+    html += '<div class="method-block" id="method-' + lbl + '">';
+    html += '<div class="method-label"><span>' + lbl + '</span> Method ' + lbl + ' | 方法 ' + lbl + '</div>';
+
+    // 方法图
+    html += '<div class="method-img-wrap">';
+    if (cfg.methods[lbl]) {
+      html += '<img src="' + cfg.methods[lbl] + '" alt="Method ' + lbl + '" loading="lazy">';
+    } else {
+      html += '<span class="img-loading">Image not available</span>';
+    }
+    html += '</div>';
+
+    // Q1
+    html += '<div class="scale-row">';
+    html += '<div class="scale-question">Q1. Style Fidelity | 风格还原度 &nbsp;<em>— How well does this result capture the style of the reference? | 该结果对风格参考图的还原程度？</em></div>';
+    html += '<div class="scale-labels"><span>1 Poor 很差</span><span>5 Excellent 非常好</span></div>';
+    html += '<div class="scale-options">';
+    for (var s = 1; s <= 5; s++) {
+      var chk = (mSaved.q1 == s) ? 'checked' : '';
+      html += '<label><input type="radio" name="q1_' + lbl + '_' + idx + '" value="' + s + '" ' + chk + ' onchange="saveResponse(' + idx + ',\'' + lbl + '\',\'q1\',' + s + ')">';
+      html += '<span class="dot">' + s + '</span></label>';
+    }
+    html += '</div></div>';
+
+    // Q2
+    html += '<div class="scale-row">';
+    html += '<div class="scale-question">Q2. Multi-view Consistency | 多视角一致性 &nbsp;<em>— How consistent is the texture across 4 views? | 纹理在 4 个视角间的一致程度？</em></div>';
+    html += '<div class="scale-labels"><span>1 Very inconsistent 非常不一致</span><span>5 Very consistent 非常一致</span></div>';
+    html += '<div class="scale-options">';
+    for (var s2 = 1; s2 <= 5; s2++) {
+      var chk2 = (mSaved.q2 == s2) ? 'checked' : '';
+      html += '<label><input type="radio" name="q2_' + lbl + '_' + idx + '" value="' + s2 + '" ' + chk2 + ' onchange="saveResponse(' + idx + ',\'' + lbl + '\',\'q2\',' + s2 + ')">';
+      html += '<span class="dot">' + s2 + '</span></label>';
+    }
+    html += '</div></div>';
+
+    html += '</div>'; // method-block
+  }
+
+  // Q3
+  html += '<div class="card">';
+  html += '<div class="card-title">Q3. Overall Visual Appeal | 整体视觉吸引力</div>';
+  html += '<p style="font-size:15px;color:#444;margin-bottom:4px">Which result do you find most visually appealing overall? | 综合来看，哪个结果最具视觉吸引力？</p>';
+  html += '<div class="q3-options">';
+  for (var q = 0; q < 4; q++) {
+    var ql = LABELS[q];
+    var qchk = (saved.q3 === ql) ? 'checked' : '';
+    html += '<label><input type="radio" name="q3_' + idx + '" value="' + ql + '" ' + qchk + ' onchange="saveQ3(' + idx + ',\'' + ql + '\')">';
+    html += '<span class="q3-btn">' + ql + '</span></label>';
+  }
+  html += '</div>';
+  html += '<p id="q3-error" class="error-msg">请选择一个选项 / Please select one.</p>';
+  html += '</div>';
+
+  document.getElementById('case-container').innerHTML = html;
+  window.scrollTo(0, 0);
+  saveState();
+}
+
+// ── 保存单个回答 ──
+function saveResponse(caseIdx, label, qKey, value) {
+  if (!responses[caseIdx]) responses[caseIdx] = {};
+  if (!responses[caseIdx][label]) responses[caseIdx][label] = {};
+  responses[caseIdx][label][qKey] = value;
+  saveState();
+}
+
+function saveQ3(caseIdx, label) {
+  if (!responses[caseIdx]) responses[caseIdx] = {};
+  responses[caseIdx].q3 = label;
+  document.getElementById('q3-error').style.display = 'none';
+  saveState();
+}
+
+// ── 导航 ──
+function navigate(dir) {
+  // 验证当前 case
+  if (dir > 0 && !validateCase(currentCase)) return;
+
+  var next = currentCase + dir;
+  if (next < 0) return;
+
+  if (next >= SURVEY_CONFIG.cases.length) {
+    showDone();
+    return;
+  }
+  showCase(next);
+}
+
+function validateCase(idx) {
+  var r = responses[idx] || {};
+  var missing = false;
+
+  for (var i = 0; i < LABELS.length; i++) {
+    var lbl = LABELS[i];
+    var m = r[lbl] || {};
+    if (!m.q1 || !m.q2) {
+      missing = true;
+      // 高亮未填的方法块
+      var el = document.getElementById('method-' + lbl);
+      if (el) {
+        el.style.borderColor = '#e53935';
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      break;
+    }
+  }
+
+  if (!missing && !r.q3) {
+    document.getElementById('q3-error').style.display = 'block';
+    document.getElementById('q3-error').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    missing = true;
+  }
+
+  return !missing;
+}
+
+// ── 完成页 ──
+function showDone() {
+  document.getElementById('page-case').classList.remove('active');
+  document.getElementById('page-done').classList.add('active');
+  document.getElementById('topbar').style.display = 'none';
+}
+
+// ── 下载 CSV ──
+function downloadCSV() {
+  var rows = [];
+  rows.push([
+    'participant_id','case_num','obj','style_num',
+    'A_method','B_method','C_method','D_method',
+    'A_q1','A_q2','B_q1','B_q2','C_q1','C_q2','D_q1','D_q2',
+    'q3_most_appealing'
+  ].join(','));
+
+  var cfg = SURVEY_CONFIG.cases;
+  for (var i = 0; i < cfg.length; i++) {
+    var c = cfg[i];
+    var r = responses[i] || {};
+    var row = [
+      participantId,
+      c.caseNum,
+      c.objName,
+      c.styleNum,
+      c.methodOrder ? c.methodOrder.A : '',
+      c.methodOrder ? c.methodOrder.B : '',
+      c.methodOrder ? c.methodOrder.C : '',
+      c.methodOrder ? c.methodOrder.D : '',
+      (r.A||{}).q1||'', (r.A||{}).q2||'',
+      (r.B||{}).q1||'', (r.B||{}).q2||'',
+      (r.C||{}).q1||'', (r.C||{}).q2||'',
+      (r.D||{}).q1||'', (r.D||{}).q2||'',
+      r.q3 || ''
+    ];
+    rows.push(row.join(','));
+  }
+
+  var csv  = rows.join('\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'responses_' + participantId + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── 持久化 ──
+function saveState() {
+  localStorage.setItem('survey_state', JSON.stringify({
+    participantId: participantId,
+    currentCase:   currentCase,
+    responses:     responses
+  }));
+}
+</script>
+</body>
+</html>
