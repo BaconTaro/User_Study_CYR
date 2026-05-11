@@ -309,17 +309,13 @@
     </p>
     <p>
       For each case you will see a style reference and 4 anonymous results (A/B/C/D).<br>
-      每组展示一张风格参考图和 4 个匿名方法结果（A/B/C/D）。
+      Rate each result, then pick the most visually appealing one.<br>
+      每组展示风格参考图和 4 个匿名结果（A/B/C/D），请打分并选出最具吸引力的。
     </p>
     <p>
       <strong>Estimated time: 20–30 minutes. | 预计用时：20–30 分钟。</strong>
     </p>
-    <label class="id-label" for="pid">
-      Participant ID | 参与者编号 <span style="color:#e53935">*</span>
-    </label>
-    <input class="id-input" id="pid" type="text" placeholder="e.g. P01" maxlength="20">
-    <p id="pid-error" class="error-msg">请输入参与者编号 / Please enter your ID.</p>
-    <br><br>
+    <br>
     <button class="btn btn-primary" style="width:100%;padding:14px" onclick="startSurvey()">
       Start / 开始 →
     </button>
@@ -343,13 +339,17 @@
     <h1>All Done! | 完成！</h1>
     <p>
       Thank you for completing the study!<br>
-      感谢您完成本次用户实验！<br><br>
-      Please click the button below to download your responses as a CSV file,
-      then send the file to the researcher.<br>
-      请点击下方按钮下载您的回答（CSV 文件），然后发送给研究者。
+      感谢您完成本次用户实验！
+    </p>
+    <p id="submit-status" style="color:#5c6bc0;font-weight:600;margin-bottom:20px">
+      Uploading responses... | 正在上传回答...
+    </p>
+    <p style="font-size:13px;color:#888;margin-bottom:24px">
+      If upload fails, please download the CSV below as backup.<br>
+      如果上传失败，请下载下方 CSV 文件作为备份。
     </p>
     <button class="btn btn-download" onclick="downloadCSV()">
-      ⬇ Download Responses / 下载回答
+      ⬇ Download CSV (Backup) / 下载备份
     </button>
   </div>
 </div>
@@ -359,11 +359,11 @@
 // ── 状态 ──
 var participantId = '';
 var currentCase   = 0;
-var responses     = {};   // { caseIdx: { A:{q1,q2}, B:{q1,q2}, C:{q1,q2}, D:{q1,q2}, q3 } }
+var responses     = {};
 
 var LABELS = ['A','B','C','D'];
 
-// ── 恢复进度 ──
+// ── 恢复进度或生成新 ID ──
 (function(){
   var saved = localStorage.getItem('survey_state');
   if (saved) {
@@ -374,16 +374,14 @@ var LABELS = ['A','B','C','D'];
       responses     = s.responses     || {};
     } catch(e) {}
   }
+  if (!participantId) {
+    // 自动生成匿名 ID，如 anon_a3f2c1
+    participantId = 'anon_' + Math.random().toString(36).slice(2, 8);
+  }
 })();
 
 // ── 开始 ──
 function startSurvey() {
-  var val = document.getElementById('pid').value.trim();
-  if (!val) {
-    document.getElementById('pid-error').style.display = 'block';
-    return;
-  }
-  participantId = val;
   saveState();
   showCase(currentCase);
 }
@@ -548,11 +546,57 @@ function validateCase(idx) {
   return !missing;
 }
 
+// ── 提交接口 ──
+var SUBMIT_URL = 'https://script.google.com/macros/s/AKfycby6wSLfdb2PPyIT3Lspkot3KIXwyg6DlGI4CcaDE0X4ZmiMEaHWnLF5NUEeapsx5sIudA/exec';
+
 // ── 完成页 ──
 function showDone() {
   document.getElementById('page-case').classList.remove('active');
   document.getElementById('page-done').classList.add('active');
   document.getElementById('topbar').style.display = 'none';
+  submitResults();
+}
+
+// ── 自动提交到 Google Sheets ──
+async function submitResults() {
+  var btn = document.getElementById('submit-status');
+  if (btn) btn.textContent = 'Uploading responses... | 正在上传回答...';
+
+  try {
+    var data = buildResponseData();
+    await fetch(SUBMIT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    // no-cors 模式下无法读取响应，等待后视为成功
+    if (btn) btn.innerHTML = '✅ Responses saved to Google Sheets! | 回答已保存！';
+  } catch(e) {
+    if (btn) btn.innerHTML = '⚠️ Upload failed, please download CSV backup. | 上传失败，请下载 CSV 备份。';
+    console.error(e);
+  }
+}
+
+// ── 构建回答数据 ──
+function buildResponseData() {
+  var cfg = SURVEY_CONFIG.cases;
+  var rows = [];
+  for (var i = 0; i < cfg.length; i++) {
+    var c = cfg[i];
+    var r = responses[i] || {};
+    rows.push({
+      case_num: c.caseNum, obj: c.objName, style_num: c.styleNum,
+      A_method: (c.methodOrder||{}).A, B_method: (c.methodOrder||{}).B,
+      C_method: (c.methodOrder||{}).C, D_method: (c.methodOrder||{}).D,
+      A_q1: (r.A||{}).q1, A_q2: (r.A||{}).q2,
+      B_q1: (r.B||{}).q1, B_q2: (r.B||{}).q2,
+      C_q1: (r.C||{}).q1, C_q2: (r.C||{}).q2,
+      D_q1: (r.D||{}).q1, D_q2: (r.D||{}).q2,
+      q3: r.q3
+    });
+  }
+  return { participantId: participantId, timestamp: new Date().toISOString(), responses: rows };
 }
 
 // ── 下载 CSV ──
